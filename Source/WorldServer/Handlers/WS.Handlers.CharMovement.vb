@@ -36,10 +36,19 @@ Module WS_CharMovement
 
         client.Character.charMovementFlags = packet.GetInt32()
         Dim Time As UInteger = packet.GetUInt32()
-        client.Character.positionX = packet.GetFloat()
-        client.Character.positionY = packet.GetFloat()
-        client.Character.positionZ = packet.GetFloat()
+        Dim posX As Single = packet.GetFloat()
+        Dim posY As Single = packet.GetFloat()
+        Dim posZ As Single = packet.GetFloat()
         client.Character.orientation = packet.GetFloat()
+
+        'Anticheat injection
+        MovementEvent(client, client.Character.RunSpeed, posX, client.Character.positionX, posY, client.Character.positionY, posZ, client.Character.positionZ, Time, WS_Network.MsTime)
+        If client.Character Is Nothing Then
+            Return
+        End If
+        client.Character.positionX = posX
+        client.Character.positionY = posY
+        client.Character.positionZ = posZ
 
         'DONE: If character is falling below the world
         If client.Character.positionZ < -500.0F Then
@@ -307,22 +316,7 @@ Module WS_CharMovement
 
         Dim newSpeed As Single = packet.GetFloat()
 
-        Try
-            'DONE: Anti hack
-            'This doesn't even work anyway, If i'm correct this is suppose to detect when some ones speed changed via abnormal method's and DC the offender.
-            'However how would this even work against speeding up the process it's self?
-            'At the moment, this just flat out does not work.
-            If client.Character.antiHackSpeedChanged_ <= 0 Then
-                Try
-                    client.Character.Logout(Nothing)
-                    Exit Sub
-                Catch ex As Exception
-                    Log.WriteLine(LogType.WARNING, "[{0}:{1}] CHEAT: Possible speed hack detected!", client.IP, client.Port)
-                End Try
-            End If
-        Catch ex As Exception
-            Log.WriteLine(LogType.DEBUG, "[{0}:{1}] {3} [{2}]", client.IP, client.Port, newSpeed, packet.OpCode)
-        End Try
+        ' Removed old anti-hack code for kicking the user. Replaced with anticheat module.
 
         'DONE: Update speed value and create packet
         client.Character.antiHackSpeedChanged_ -= 1
@@ -548,6 +542,10 @@ Module WS_CharMovement
 
     Public Sub On_MSG_MOVE_HEARTBEAT(ByRef packet As PacketClass, ByRef client As ClientClass)
         OnMovementPacket(packet, client)
+
+        If client.Character Is Nothing Then
+            Return
+        End If
 
         If client.Character.CellX <> GetMapTileX(client.Character.positionX) Or client.Character.CellY <> GetMapTileY(client.Character.positionY) Then
             MoveCell(client.Character)
