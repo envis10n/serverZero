@@ -423,19 +423,25 @@ Namespace Handlers
 
             Try
                 Dim q As New DataTable
-                'DISABLED : Just bans the account either way, sql query needs fixed?
-                'DONE: Players can now only remove their own characters, not someone elses :)
-                'Database.Query(String.Format("SELECT accounts.account_id FROM accounts, characters WHERE account = ""{0}"" AND char_guid = {1} AND accounts.account_id = characters.account_id;", client.Account, guid), q)
-                'If q.Rows.Count = 0 Then
-                'DONE: Ban and exit, showing nice message to player ;)
-                'response.AddInt8(AuthResponseCodes.AUTH_BANNED)
-                'Client.Send(response)
-                'Ban_Account(Client.Account, "Packet manipulation")
-                'Thread.Sleep(3500)
-                'Client.Delete()
-                'Exit Sub
-                'End If
-                ' q.Clear()
+
+                'DONE: Fixed packet manipulation protection.
+                'Tested: Envis10n - Normal players CAN delete characters just fine.
+                'To Be Tested: Manipulate a packet and attempt to delete someone else's character :]
+                Dim qa As New DataTable
+                Dim qc As New DataTable
+
+                AccountDatabase.Query(String.Format("SELECT id FROM account WHERE username = ""{0}"";", client.Account), qa)
+                If qa.Rows.Count = 0 Then
+                    Exit Sub
+                End If
+                CharacterDatabase.Query(String.Format("SELECT char_guid FROM characters WHERE account_id = ""{0}"" AND char_guid = ""{1}"";", qa.Rows(0).Item("id"), guid), qc)
+                If qc.Rows.Count = 0 Then
+                    response.AddInt8(AuthResult.WOW_FAIL_BANNED)
+                    client.Send(response)
+                    Ban_Account(client.Account, "Packet Manipulation/Character Deletion")
+                    client.Delete()
+                    Exit Sub
+                End If
 
                 CharacterDatabase.Query(String.Format("SELECT item_guid FROM characters_inventory WHERE item_bag = {0};", guid), q)
                 For Each row As DataRow In q.Rows

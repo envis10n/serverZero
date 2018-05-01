@@ -133,7 +133,12 @@ Namespace Globals
             End Property
             Public ReadOnly Property OpCode() As OPCODES
                 Get
-                    Return (Data(2) + (Data(3) * 256))
+                    ' Check for weird packets
+                    If UBound(Data) > 2 Then
+                        Return (Data(2) + (Data(3) * 256))
+                    Else
+                        Return 0
+                    End If
                 End Get
             End Property
 
